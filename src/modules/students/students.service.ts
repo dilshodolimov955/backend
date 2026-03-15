@@ -1,4 +1,3 @@
-
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { hashPassword } from 'src/common/config/bcrypt';
 import { CreateStudentDto } from './dto/create-student.dto';

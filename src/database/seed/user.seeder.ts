@@ -15,7 +15,7 @@ export class UserSeeder implements OnModuleInit {
         if (!existUser) {
             await this.prisma.user.create({
                 data: {
-                    fullName: "Dilshodbek",
+                    fullName: "Dilshodbek", 
                     email: "dilshodolimovv7@gmail.com",
                     password: await hashPassword("12345678"),
                     role: "SUPERADMIN",

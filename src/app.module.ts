@@ -24,7 +24,7 @@ import { UserSeeder } from './database/seed/user.seeder';
     CourseModule,
     RoomsModule,
     GroupsModule,
-    LessonsModule
+    LessonsModule,
   ],
   providers: [UserSeeder] 
 })

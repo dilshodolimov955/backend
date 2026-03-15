@@ -1,9 +1,10 @@
 import { MailerService } from 'src/common/email/email.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
-import { CreateUserDto, UpdateUserDto } from './dto/create-user.dto';
+import { CreateUserDto,  } from './dto/create-user.dto';
 import { hashPassword } from 'src/common/config/bcrypt';
 import { CloudinaryService } from 'src/common/cloudinary/cloudinary.service';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 
 @Injectable()
@@ -15,8 +16,7 @@ export class UsersService {
   ) {}
 
   async createUser(payload: CreateUserDto, file?: Express.Multer.File) {
-    let photoUrl: string | null = null;
-
+    let photoUrl: string | null = null
     if (file) {
       photoUrl = await this.cloudinaryService.uploadFile(file, 'users');
     }
@@ -33,7 +33,7 @@ export class UsersService {
     await this.mailerService.sendEmail(
       payload.email,
       payload.email,
-      payload.password,
+      payload.password
     );
 
     return {
@@ -63,7 +63,7 @@ export class UsersService {
     };
   }
 
-  async updateUser(id: number, payload: UpdateUserDto) {
+  async updateUser(id: number, payload: UpdateUserDto ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new NotFoundException('User is Not found');
