@@ -1,33 +1,29 @@
-import { Module } from "@nestjs/common";
+import { Module } from '@nestjs/common';
 import { MailerModule as NestMilerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { join } from "path";
-import { MailerService } from './email.service';
+import { join } from 'path';
 
 @Module({
-    imports:[
-        NestMilerModule.forRoot({
-            transport:{
-                service:"gmail",
-                auth:{
-                    user:"feruzbegmuxammatov682@gmail.com",
-                    pass:"gcwqotxwhecwcqqr"
-                }
-            },
-            defaults:{
-                from:`<n25_crm> dilshodolimov@gmail.com`
-            },
-            template:{
-                dir:join(process.cwd(),"template"),
-                adapter: new HandlebarsAdapter(),
-                options:{
-                    strict:true
-                }
-            }
-            
-        })
-    ],
-    providers: [MailerService],
-    exports: [MailerService]
+  imports: [
+    NestMilerModule.forRoot({
+      transport: {
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_PASS,
+        },
+      },
+      defaults: {
+        from: `"Olimov Dilshod" <${process.env.GMAIL_USER}>`,
+      },
+      template: {
+        dir: join(process.cwd(), 'template'),
+        adapter: new HandlebarsAdapter(),
+        options: {
+          strict: true,
+        },
+      },
+    }),
+  ],
 })
-export class MailerModule{}
+export class MailerModule {}

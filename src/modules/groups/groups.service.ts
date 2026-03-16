@@ -1,25 +1,64 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Status, Role, WeekDays } from '@prisma/client'; 
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Role, Status } from '@prisma/client';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateGroupDto } from './dto/create-group.dto';
-import { PrismaService } from 'src/database/prisma.service';
+import { UpdateGroupDto } from './dto/update-group.dto';
 
 @Injectable()
 export class GroupsService {
   constructor(private prisma: PrismaService) {}
 
-  async getGroupLessons(groupId: number, currentUser: { id: number; role: Role }) {
-    const existGroup = await this.prisma.group.findUnique({
+  async getAllStudentGroupById(groupId: number) {
+    const groups = await this.prisma.studentGroup.findMany({
       where: {
-        id: groupId,
-        status: Status.ACTIVE, 
+        groupId,
+        status: Status.ACTIVE,
+      },
+      select: {
+        id: true,
+        student: {
+          select: {
+            id: true,
+            fullName: true,
+            photo: true,
+            email: true,
+          },
+        },
       },
     });
 
+    const formattedGroups = groups.map((group) => group.student);
+
+    return {
+      success: true,
+      data: formattedGroups,
+    };
+  }
+
+  async getGroupLessons(
+    groupId: number,
+    currentUser: { id: number; role: Role },
+  ) {
+    const existGroup = await this.prisma.group.findUnique({
+      where: {
+        id: groupId,
+        status: 'ACTIVE',
+      },
+    });
     if (!existGroup) {
       throw new NotFoundException('Group not found');
     }
 
-    if (currentUser.role === Role.TEACHER && existGroup.teacherId !== currentUser.id) {
+    if (
+      currentUser.role == Role.TEACHER &&
+      existGroup.teacherId != currentUser.id
+    ) {
       throw new ForbiddenException('Bu sening guruhing emas');
     }
 
@@ -37,7 +76,7 @@ export class GroupsService {
 
   async getAllGroup() {
     const groups = await this.prisma.group.findMany({
-      where: { status: Status.ACTIVE },
+      where: { status: 'ACTIVE' },
     });
 
     return {
@@ -83,8 +122,7 @@ export class GroupsService {
       throw new NotFoundException('Room not found with this id');
     }
 
-  
-    const existGroup = await this.prisma.group.findFirst({
+    const existGroup = await this.prisma.group.findUnique({
       where: {
         name: payload.name,
         courseId: payload.courseId,
@@ -116,45 +154,114 @@ export class GroupsService {
     });
 
     let newStartMinute = timeToMinutes(payload.startTime);
-    let newEndMinute = newStartMinute + existCourse.durationLesson;
+    let newEndMinute =
+      timeToMinutes(payload.startTime) + existCourse.durationLesson;
+    const roomBusy = roomGroups.every((roomGroup) => {
+      const { startTime } = roomGroup;
+      let startMinute = timeToMinutes(startTime);
+      let endMinute =
+        timeToMinutes(startTime) + roomGroup.course.durationLesson;
 
-    const roomBusy = roomGroups.some((roomGroup) => {
-      const commonDays = roomGroup.weekDays.filter((day) =>
-        payload.weekDays.includes(day as any),
-      );
-
-      if (commonDays.length > 0) {
-        let startMinute = timeToMinutes(roomGroup.startTime);
-        let endMinute = startMinute + roomGroup.course.durationLesson;
-
-        
-        return newStartMinute < endMinute && newEndMinute > startMinute;
-      }
-      return false;
+      return startMinute >= newEndMinute || endMinute <= newStartMinute;
     });
 
-    if (roomBusy) {
-      throw new BadRequestException('Bu vaqtda xona band');
+    if (!roomBusy) {
+      throw new BadRequestException('Bu vaqtga hona band');
     }
-
 
     await this.prisma.group.create({
       data: {
-        name: payload.name,
-        teacherId: payload.teacherId,
-        courseId: payload.courseId,
-        roomId: payload.roomId,
-        startTime: payload.startTime,
-        weekDays: payload.weekDays as WeekDays[], 
-        startDate: new Date(payload.startDate),
+        ...payload,
         userId: currentUser.id,
-        status: Status.ACTIVE,
+        startDate: new Date(payload.startDate),
       },
     });
 
     return {
       success: true,
       message: 'Group created',
+    };
+  }
+
+  async updateGroupById(
+    groupId: number,
+    payload: UpdateGroupDto,
+    currentUser: { id: number; role: Role },
+  ) {
+    const existGroup = await this.prisma.group.findUnique({
+      where: {
+        id: groupId,
+        status: Status.ACTIVE,
+      },
+    });
+    if (!existGroup) {
+      throw new NotFoundException('Group not found');
+    }
+
+    if (
+      currentUser.role === Role.TEACHER &&
+      existGroup.teacherId != currentUser.id
+    ) {
+      throw new ForbiddenException('Bu sening guruhing emas');
+    }
+
+    const data: any = {};
+
+    if (payload.teacherId !== undefined)
+      data.teacherId = Number(payload.teacherId);
+    if (payload.roomId !== undefined) data.roomId = Number(payload.roomId);
+    if (payload.courseId !== undefined)
+      data.courseId = Number(payload.courseId);
+    if (payload.name !== undefined && payload.name.trim() !== '')
+      data.name = payload.name.trim();
+    if (payload.startDate !== undefined && payload.startDate !== '')
+      data.startDate = new Date(payload.startDate);
+    if (payload.startTime !== undefined && payload.startTime.trim() !== '')
+      data.startTime = payload.startTime.trim();
+    if (payload.status !== undefined) data.status = payload.status;
+    if (payload.weekDays !== undefined) data.weekDays = payload.weekDays;
+
+    if (Object.keys(data).length === 0) {
+      return {
+        success: true,
+        message: 'No changes provided',
+      };
+    }
+
+    await this.prisma.group.update({
+      where: {
+        id: groupId,
+      },
+      data,
+    });
+    return {
+      success: true,
+      message: 'Group updated',
+    };
+  }
+
+  async deleteGroupById(groupId: number, currentUser: { id: number }) {
+    const existGroup = await this.prisma.group.findUnique({
+      where: {
+        id: groupId,
+        status: Status.ACTIVE,
+      },
+    });
+    if (!existGroup) {
+      throw new NotFoundException('Group not found');
+    }
+    await this.prisma.group.update({
+      where: {
+        id: groupId,
+      },
+      data: {
+        status: Status.FREEZE,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Group deleted',
     };
   }
 }

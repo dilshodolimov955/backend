@@ -1,103 +1,107 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { hashPassword } from 'src/common/config/bcrypt';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import { CloudinaryService } from 'src/common/cloudinary/cloudinary.service';
+import { hashPassword } from 'src/common/bcrypt/bcrypt';
 import { MailerService } from 'src/common/email/email.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
-import { UpdateTeacherDto } from './dto/update-teacher.dto';
-import { PrismaService } from 'src/database/prisma.service';
+import { UpdateTeachersDto } from './dto/update-teacher.dto';
 
 @Injectable()
 export class TeachersService {
   constructor(
     private prisma: PrismaService,
     private mailerService: MailerService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
-  async createTeacher(payload: CreateTeacherDto, filename: string) {
+  async createTeacher(payload: CreateTeacherDto, file?: Express.Multer.File) {
+    let photoUrl: string | null = null;
 
-    const hashedPassword = await hashPassword(payload.password);
+    if (file) {
+      photoUrl = await this.cloudinaryService.uploadFile(file, 'teachers');
+    }
 
-    const newTeacher = await this.prisma.teacher.create({
+    await this.prisma.teacher.create({
       data: {
-        fullName: payload.fullName,
-        email: payload.email,
-        password: hashedPassword,
-        position: payload.position,
-        experience: Number(payload.experience), 
-        photo: filename ?? null,
+        ...payload,
+        experience: Number(payload.experience),
+        password: await hashPassword(payload.password),
+        photo: photoUrl,
       },
     });
 
-
-    try {
-      await this.mailerService.sendEmail(
-        payload.email,
-        payload.email,
-        payload.password,
-      );
-    } catch (e) {
-      console.error('Email yuborishda xatolik:', e.message);
-    }
+    await this.mailerService.sendEmail(
+      payload.email,
+      payload.email,
+      payload.password,
+    );
 
     return {
       success: true,
       message: 'Teacher successfully created',
-      data: newTeacher,
     };
   }
 
   async getAllTeachers() {
-    const teachers = await this.prisma.teacher.findMany();
+    const Teachers = await this.prisma.teacher.findMany();
+
     return {
       success: true,
-      data: teachers,
+      data: Teachers,
     };
   }
 
   async getOneTeacher(id: number) {
-    const teacher = await this.prisma.teacher.findUnique({ where: { id } });
-    if (!teacher) {
+    const Teacher = await this.prisma.teacher.findUnique({ where: { id } });
+    if (!Teacher) {
       throw new NotFoundException('Teacher is Not found');
     }
 
     return {
       success: true,
-      data: teacher,
+      data: Teacher,
     };
   }
 
-  async updateTeacher(id: number, payload: UpdateTeacherDto) {
-    const teacher = await this.prisma.teacher.findUnique({ where: { id } });
+  async updateTeacherById(id: number, payload: UpdateTeachersDto, file?: Express.Multer.File) {
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id }
+    })
     if (!teacher) {
-      throw new NotFoundException('Teacher is Not found');
+      throw new NotFoundException(`Not found teacherId ${id}`)
     }
+    let photoUrl: string | null = teacher.photo;
 
-    
-    const updateData: any = { ...payload };
-    if (payload.experience) {
-      updateData.experience = Number(payload.experience);
+    if (file) {
+      photoUrl = await this.cloudinaryService.uploadFile(file, 'teachers');
     }
-
     await this.prisma.teacher.update({
       where: { id },
-      data: updateData,
-    });
-
+      data: {
+        ...payload,
+        experience: payload.experience ? Number(payload.experience) : undefined,
+        photo: photoUrl,
+      },
+    })
     return {
       success: true,
       message: 'Teacher updated successfully',
-    };
+    }
   }
 
   async deleteTeacher(id: number) {
-    const teacher = await this.prisma.teacher.findUnique({ where: { id } });
+    const teacher = await this.prisma.teacher.findUnique({
+      where: { id }
+    })
     if (!teacher) {
-      throw new NotFoundException('Teacher is Not found');
+      throw new NotFoundException(`Not found teacherId ${id}`)
     }
-    await this.prisma.teacher.delete({ where: { id } });
-    
+    await this.prisma.teacher.delete({
+      where: { id },
+    })
     return {
-      success: true,
       message: 'Teacher deleted successfully',
+      id: id,
     };
   }
 }

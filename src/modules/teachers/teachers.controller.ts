@@ -1,75 +1,102 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
-import { Role, Status } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { TeachersService } from './teachers.service';
-import { Roles } from 'src/common/decorators/roles';
 import { AuthGuard } from 'src/common/guard/jwt.auth.guard';
 import { RolesGuard } from 'src/common/guard/roles-guard';
+import { Roles } from 'src/common/guard/decarator.roles';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
-import { UpdateTeacherDto } from './dto/update-teacher.dto';
-
+import { UpdateTeachersDto } from './dto/update-teacher.dto';
 
 @Controller('teachers')
 @ApiBearerAuth()
 export class TeachersController {
-    constructor(private readonly teachersService: TeachersService) { }
-    @ApiOperation({
-        summary: `${Role.SUPERADMIN}, ${Role.ADMIN}`
-    })
-    @ApiConsumes("multipart/form-data")
-    @ApiBody({
-        schema: {
-            type: "object",
-            properties: {
-                fullName: { type: "string" },
-                email: { type: "string" },
-                password: { type: "string" },
-                position: { type: "string" },
-                experience: { type: "number", example: 4 },
-                photo: { type: "string", format: "binary", nullable: true },
-            }
-        }
-    })
-    @UseInterceptors(FileInterceptor('photo', {
-        storage: diskStorage({
-            destination: "./uploads",
-            filename: (req, file, cb) => {
-                const filename = Date.now() + "." + file.originalname
-                cb(null, filename)
-            }
-        })
-    }))
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.SUPERADMIN)
-    @Post()
-    createTeacher(
-        @Body() payload: CreateTeacherDto,
-        @UploadedFile() file: Express.Multer.File
-    ) {
-        return this.teachersService.createTeacher(payload, file.filename)
-    }
+  constructor(private readonly teachersService: TeachersService) {}
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fullName: { type: 'string' },
+        email: { type: 'string' },
+        password: { type: 'string' },
+        position: { type: 'string' },
+        experience: { type: 'number', example: 4 },
+        photo: { type: 'string', format: 'binary', nullable: true },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: memoryStorage(),
+    }),
+  )
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: `${Role.SUPERADMIN}, ${Role.ADMIN}` })
+  @Post()
+  createTeacher(
+    @Body() payload: CreateTeacherDto,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+    return this.teachersService.createTeacher(payload, file)
+  }
 
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.SUPERADMIN)
-    @Get('all')
-    getAllTeacher() {
-        return this.teachersService.getAllTeachers()
-    }
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.ADMINSTRATOR, Role.MANAGEMENT)
+  @ApiOperation({ summary: `${Role.SUPERADMIN}, ${Role.ADMIN}, ${Role.ADMINSTRATOR}, ${Role.MANAGEMENT}`})
+  @Get('all')
+  getAllTeacher() {
+    return this.teachersService.getAllTeachers();
+  }
 
-    @Get(':id')
-    getOneTeacher(@Param('id') id: string) {
-        return this.teachersService.getOneTeacher(+id);
-    }
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.ADMINSTRATOR, Role.MANAGEMENT)
+  @ApiOperation({ summary: `${Role.SUPERADMIN}, ${Role.ADMIN}, ${Role.ADMINSTRATOR}, ${Role.MANAGEMENT}` })
+  @Get(':id')
+  getOneTeacher(@Param('id') id: string) {
+    return this.teachersService.getOneTeacher(+id);
+  }
 
-    @Put()
-    updateTeacher(@Param('id') id: string, @Body() payload: UpdateTeacherDto) {
-        return this.teachersService.updateTeacher(+id, payload);
-    }
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fullName: { type: 'string' },
+        email: { type: 'string' },
+        password: { type: 'string' },
+        position: { type: 'string' },
+        experience: { type: 'number', example: 4 },
+        photo: { type: 'string', format: 'binary', nullable: true },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: memoryStorage(),
+    }),
+  )
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: `${Role.SUPERADMIN}, ${Role.ADMIN}` })
+  @Put(':id')
+  updateTeacherById(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: UpdateTeachersDto,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+    return this.teachersService.updateTeacherById(id, payload, file)
+  }
 
-    @Delete()
-    deleteTeacher(@Param('id') id: string) {
 
-    }
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: `${Role.SUPERADMIN}, ${Role.ADMIN}`})
+  @Delete(':id')
+  async deleteTeacher(@Param('id', ParseIntPipe) id: number) {
+    return this.teachersService.deleteTeacher(id)
+  }
 }

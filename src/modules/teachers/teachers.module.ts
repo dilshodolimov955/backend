@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TeachersService } from './teachers.service';
+import { CloudinaryModule } from 'src/common/cloudinary/cloudinary.module';
+import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { TeachersController } from './teachers.controller';
-import { MailerModule } from 'src/common/email/email.module';
-import { PrismaModule } from 'src/database/prisma.module';
-
-
+import { TeachersService } from './teachers.service';
+import { MailerService } from 'src/common/email/email.service';
 
 @Module({
-  imports: [PrismaModule, MailerModule],
+  imports: [CloudinaryModule, PrismaModule],
   controllers: [TeachersController],
-  providers: [TeachersService]
+  providers: [TeachersService, MailerService],
 })
 export class TeachersModule {}

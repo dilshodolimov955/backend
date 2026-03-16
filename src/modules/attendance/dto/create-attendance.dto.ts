@@ -1,33 +1,19 @@
-// import { IsInt, IsBoolean, IsOptional, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsBoolean, IsOptional, IsNotEmpty } from 'class-validator';
 
-// export class CreateAttendanceDto {
-//   @IsInt()
-//   @IsNotEmpty()
-//   lessonId: number;
+export class CreateAttendanceDto {
+  @ApiProperty({ example: 1})
+  @IsInt()
+  @IsNotEmpty()
+  lessonId: number
 
-//   @IsInt()
-//   @IsNotEmpty()
-//   studentId: number;
+  @ApiProperty({ example: 1})
+  @IsInt()
+  @IsNotEmpty()
+  studentId: number
 
-//   @IsBoolean()
-//   @IsNotEmpty()
-//   isPresent: boolean;
-
-//   @IsInt()
-//   @IsOptional()
-//   userId?: number;
-
-//   @IsInt()
-//   @IsOptional()
-//   teacherId?: number;
-// }
-
-// export class UpdateAttendanceDto {
-//   @IsBoolean()
-//   @IsOptional()
-//   isPresent?: boolean;
-
-//   @IsInt()
-//   @IsOptional()
-//   teacherId?: number;
-// }
+  @ApiProperty({ example: true})
+  @IsBoolean()
+  @IsNotEmpty()
+  isPresent: boolean
+}

@@ -1,34 +1,40 @@
-import { IsString, IsInt, IsOptional, IsEnum, IsDecimal } from 'class-validator';
-import { Type } from 'class-transformer';
-import { Status, CourseLevel } from '@prisma/client';
+import {  IsString,  IsNotEmpty,  IsNumber,  IsEnum,  IsOptional, Min } from 'class-validator';
+import { Status, CourseLevel } from '@prisma/client'
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCourseDto {
-    @ApiProperty()
-    @IsString()
-    name: string;
+  @ApiProperty({ example: "string"})
+  @IsString()
+  @IsNotEmpty()
+  name: string
 
-    @ApiProperty()
-    @IsInt()
-    @Type(() => Number)
-    durationMonth: number;
+  @ApiProperty({ example: 1})
+  @IsNumber()
+  @Min(1)
+  durationMonth: number
 
-    @ApiProperty()
-    @IsInt()
-    @Type(() => Number)
-    durationLesson: number;
+  @ApiProperty({ example: 1})
+  @IsNumber()
+  @Min(1)
+  durationLesson: number
 
-    @ApiProperty()
-    @IsOptional()
-    @IsEnum(CourseLevel)
-    level?: CourseLevel;
+  @ApiProperty({ enum: Status, example: Status.ACTIVE})
+  @IsEnum(Status)
+  @IsOptional()
+  status?: Status
 
-    @ApiProperty()
-    @IsDecimal()
-    price: string;
+  @ApiProperty({ enum: CourseLevel, example: CourseLevel.BEGINNER})
+  @IsEnum(CourseLevel)
+  @IsOptional()
+  level?: CourseLevel
 
-    @ApiProperty()
-    @IsOptional()
-    @IsString()
-    description?: string;
+  @ApiProperty({ example: 1})
+  @IsNumber() 
+  @Min(0)
+  price: number
+
+  @ApiProperty({ example: "string"})
+  @IsString()
+  @IsOptional()
+  description?: string
 }

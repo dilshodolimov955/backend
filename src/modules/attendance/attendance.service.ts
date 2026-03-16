@@ -1,102 +1,143 @@
-// import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-// import { CreateAttendanceDto } from './dto/create-attendance.dto';
-// import { UpdateAttendanceDto } from './dto/update-attendance.dto';
-// import { PrismaService } from 'src/database/prisma.service';
-// import { Role, Status } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateAttendanceDto } from './dto/create-attendance.dto';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import { Role } from '@prisma/client';
 
-// @Injectable()
-// export class AttendanceService {
-//   constructor(private prisma: PrismaService) { }
+@Injectable()
+export class AttendanceService {
+  constructor(private prisma: PrismaService) {}
 
-//   // 1. CREATE - Davomat yaratish
-//   async createAttendance(payload: CreateAttendanceDto, currentUser: { id: number, role: Role }) {
-//     const existLesson = await this.prisma.lesson.findUnique({
-//       where: { id: payload.lessonId }
-//     });
+  async getAttendanceByLesson(lessonId: number) {
+    const existLesson = await this.prisma.lesson.findUnique({
+      where: {
+        id: lessonId,
+      },
+    });
+    if (!existLesson) {
+      throw new NotFoundException('Lesson not found with this id');
+    }
 
-//     if (!existLesson) {
-//       throw new NotFoundException("Ushbu ID bilan dars topilmadi");
-//     }
+    const lessonStudents = await this.prisma.attendance.findMany({
+      where: {
+        lessonId: lessonId,
+      },
+      select: {
+        isPresent: true,
+        student: {
+          select: {
+            id: true,
+            fullName: true,
+            photo: true,
+          },
+        },
+      },
+    });
+    return {
+      success: true,
+      data: lessonStudents,
+    };
+  }
 
-//     const existStudent = await this.prisma.student.findUnique({
-//       where: { 
-//         id: payload.studentId,
-//         status: Status.ACTIVE 
-//       }
-//     });
+  async createAttendance(
+    payload: CreateAttendanceDto,
+    currentUser: { id: number; role: Role },
+  ) {
+    const existLesson = await this.prisma.lesson.findUnique({
+      where: {
+        id: payload.lessonId,
+      },
+      select: {
+        id: true,
+        group: {
+          select: {
+            teacherId: true,
+          },
+        },
+      },
+    });
 
-//     if (!existStudent) {
-//       throw new NotFoundException("Faol talaba topilmadi");
-//     }
+    if (!existLesson) {
+      throw new NotFoundException('Lesson not found with this id');
+    }
 
-//     const duplicateAttendance = await this.prisma.attendance.findFirst({
-//       where: {
-//         lessonId: payload.lessonId,
-//         studentId: payload.studentId
-//       }
-//     });
+    if (
+      currentUser.role == Role.TEACHER &&
+      existLesson.group.teacherId != currentUser.id
+    ) {
+      throw new NotFoundException('Bu sening darsing emas');
+    }
 
-//     if (duplicateAttendance) {
-//       throw new BadRequestException("Ushbu talabaga bu dars uchun allaqachon davomat qilingan");
-//     }
+    const existStudent = await this.prisma.student.findUnique({
+      where: {
+        id: payload.studentId,
+        status: 'ACTIVE',
+      },
+    });
+    if (!existStudent) {
+      throw new NotFoundException('Student not found with this id');
+    }
 
-//     return this.prisma.attendance.create({
-//       data: {
-//         lessonId: payload.lessonId,
-//         studentId: payload.studentId,
-//         isPresent: payload.isPresent,
-//         teacherId: currentUser.role === Role.TEACHER ? currentUser.id : payload.teacherId,
-//         userId: currentUser.role !== Role.TEACHER ? currentUser.id : payload.userId,
-//       },
-//       include: {
-//         student: true,
-//         lesson: true
-//       }
-//     });
-//   }
+    await this.prisma.attendance.create({
+      data: {
+        ...payload,
+        teacherId: currentUser.role == Role.TEACHER ? currentUser.id : null,
+        userId: currentUser.role != Role.TEACHER ? currentUser.id : null,
+      },
+    });
 
-//   // 2. FIND ALL - Muayyan dars bo'yicha barcha davomatlarni olish
-//   async findAllByLesson(lessonId: number) {
-//     return this.prisma.attendance.findMany({
-//       where: { lessonId },
-//       include: {
-//         student: { select: { id: true, attendances: true } }, // Faqat kerakli maydonlar
-//         lesson: true
-//       },
-//       orderBy: { created_at: 'desc' }
-//     });
-//   }
+    return {
+      success: true,
+      message: 'Attendance created successfully',
+    };
+  }
 
-//   // 3. FIND ONE - Bitta davomat ma'lumotini olish
-//   async findOne(id: number) {
-//     const attendance = await this.prisma.attendance.findUnique({
-//       where: { id },
-//       include: { student: true, lesson: true }
-//     });
+  async updateAttendance(
+    payload: CreateAttendanceDto,
+    currentUser: { id: number; role: Role },
+  ) {
+    const existAttendance = await this.prisma.attendance.findFirst({
+      where: {
+        lessonId: payload.lessonId,
+        studentId: payload.studentId,
+      },
+    });
+    if (!existAttendance) {
+      throw new NotFoundException(
+        'Attendance not found with this lesson id and student id',
+      );
+    }
+    const existLesson = await this.prisma.lesson.findUnique({
+      where: {
+        id: payload.lessonId,
+      },
+      select: {
+        id: true,
+        group: {
+          select: {
+            teacherId: true,
+          },
+        },
+      },
+    });
+    if (!existLesson) {
+      throw new NotFoundException('Lesson not found with this id');
+    }
 
-//     if (!attendance) {
-//       throw new NotFoundException(`ID: ${id} bo'lgan davomat topilmadi`);
-//     }
-
-//     return attendance;
-//   }
-
-//   // 4. UPDATE - Davomatni o'zgartirish (masalan, xato belgilangan bo'lsa)
-//   async update(id: number, payload: UpdateAttendanceDto) {
-//     await this.findOne(id); // Borligini tekshirish
-
-//     return this.prisma.attendance.update({
-//       where: { id },
-//       data: payload,
-//     });
-//   }
-
-//   // 5. REMOVE - Davomatni o'chirish
-//   async remove(id: number) {
-//     await this.findOne(id); // Borligini tekshirish
-    
-//     return this.prisma.attendance.delete({
-//       where: { id }
-//     });
-//   }
-// }
+    if (
+      currentUser.role == Role.TEACHER &&
+      existLesson.group.teacherId != currentUser.id
+    ) {
+      throw new NotFoundException('Bu sening darsing emas');
+    }
+    await this.prisma.attendance.update({
+      where: {
+        id: existAttendance.id,
+      },
+      data: {
+        isPresent: payload.isPresent,
+        teacherId: currentUser.role == Role.TEACHER ? currentUser.id : null,
+        userId: currentUser.role != Role.TEACHER ? currentUser.id : null,
+      },
+    });
+  }
+}

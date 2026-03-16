@@ -1,4 +1,14 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateStudentGroupDto } from './create-student-group.dto';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsInt, IsOptional } from "class-validator";
 
-export class UpdateStudentGroupDto extends PartialType(CreateStudentGroupDto) {}
+export class updateStudentGroupDto{
+    @ApiProperty()
+    @IsOptional()
+    @IsInt()
+    id : number
+
+    @ApiProperty()
+    @IsOptional()
+    @IsInt()
+    groupId : number
+}

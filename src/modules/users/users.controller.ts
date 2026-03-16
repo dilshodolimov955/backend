@@ -3,10 +3,10 @@ import { UsersService } from './users.service';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { Roles } from 'src/common/guard/decarator.roles';
 import { Role } from '@prisma/client';
 import { AuthGuard } from 'src/common/guard/jwt.auth.guard';
 import { RolesGuard } from 'src/common/guard/roles-guard';
-import { Roles } from 'src/common/decorators/roles';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 

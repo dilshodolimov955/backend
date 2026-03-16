@@ -1,24 +1,26 @@
-import { ApiProperty } from "@nestjs/swagger"
-import { Role } from "@prisma/client"
-import { Type } from "class-transformer"
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsString } from "class-validator"
-
+import { IsString, IsEmail, IsOptional, IsEnum } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 
 export class CreateStudentDto {
-    @ApiProperty()
-    @IsString()
-    fullName: string
+  @ApiProperty()
+  @IsString()
+  fullName: string
 
-    @ApiProperty()
-    @IsString()
-    email: string   
+  @ApiProperty()
+  @IsEmail()
+  email: string
 
-    @ApiProperty()
-    @IsString()
-    password: string
+  @ApiProperty()
+  @IsString()
+  password: string
 
-    @ApiProperty()
-    @IsDateString()
-    birth_date: string
+  @ApiProperty()
+  @IsString()
+  birth_date: string
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  photo?: string;
 }

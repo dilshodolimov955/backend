@@ -8,10 +8,10 @@ export class MailerService {
     ){}
     async sendEmail(email:string,login:string,password:string){
         await this.mailerService.sendMail({
-            to:email,
-            subject:"crm platformasiga kirish uchun login/parol",
+            to: email,
+            subject:"CRM tizimiga kirish",
             template:"index",
-            context:{text:`login : ${login}\nparol : ${password}`}
+            context:{text:`email : ${login}\nparol : ${password}`}
         })
     }
 }

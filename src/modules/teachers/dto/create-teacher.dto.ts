@@ -1,23 +1,31 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateTeacherDto {
-  @IsNotEmpty()
+  @ApiProperty()
   @IsString()
-  fullName: string;
+  fullName: string
 
-  @IsEmail()
-  email: string;
-
-  @IsNotEmpty()
+  @ApiProperty()
   @IsString()
-  @MinLength(6)
-  password: string;
+  email: string
 
-  @IsNotEmpty()
+  @ApiProperty()
   @IsString()
-  position: string;
+  password: string
 
-  @IsNotEmpty()
+  @ApiProperty()
   @IsString()
-  experience: string;
+  position: string
+
+  @ApiProperty()
+  @IsNumber()
+  @Type(() => Number)
+  experience: number
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  photo?: string
 }

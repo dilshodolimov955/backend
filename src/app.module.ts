@@ -1,31 +1,41 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from "@nestjs/config";
-import { MailerModule } from './common/email/email.module';
-import { AuthModule } from './modules/auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './modules/users/users.module';
-import { TeachersModule } from './modules/teachers/teachers.module';
+import { PrismaModule } from './common/prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { StudentsModule } from './modules/students/students.module';
-import { CourseModule } from './modules/course/course.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
-import { GroupsModule } from './modules/groups/groups.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
-import { PrismaModule } from './database/prisma.module';
-import { UserSeeder } from './database/seed/user.seeder'; 
+import { UserSeeder } from './common/seed/user.seed';
+import { CourseModule } from './modules/course/course.module';
+import { GroupsModule } from './modules/groups/groups.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { LessonVideosModule } from './modules/lesson-videos/lesson-videos.module';
+import { TeachersModule } from './modules/teachers/teachers.module';
+import { MailerModule } from './common/email/email.module';
+import { HomeworkModule } from './modules/homework/homeworks.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule, 
-    MailerModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    PrismaModule,
     AuthModule,
     UsersModule,
     TeachersModule,
+    MailerModule,
     StudentsModule,
     CourseModule,
     RoomsModule,
-    GroupsModule,
     LessonsModule,
+    GroupsModule,
+    AttendanceModule,
+    HomeworkModule,
+    LessonVideosModule,
   ],
-  providers: [UserSeeder] 
+  controllers: [],
+  providers: [UserSeeder],
 })
 export class AppModule {}

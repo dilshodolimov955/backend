@@ -1,87 +1,98 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { comparePassword } from 'src/common/bcrypt/bcrypt';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import { Role } from '@prisma/client';
-import * as bcrypt from "bcrypt"
-import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
 export class AuthService {
-    constructor(
-        private prisma : PrismaService,
-        private jwtService : JwtService
-    ){}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService
+  ) {}
 
-    private async generateToken(payload : {id:number,email:string,role:Role}){
-        return await this.jwtService.sign(payload)
+  private async generateToken(payload: {
+    id: number
+    email: string
+    role: Role
+  }) {
+    return await this.jwtService.sign(payload)
+  }
+
+  async login(payload: LoginDto) {
+    const existEmail = await this.prisma.user.findFirst({
+      where: {
+        email: payload.email
+      }
+    })
+
+    if (!existEmail) {
+      throw new BadRequestException('Login or password wrong')
     }
 
-    async login(payload : LoginDto){
-        const existEmail = await this.prisma.user.findFirst({
-            where:{
-                email:payload.login
-            }
-        })
+    if (!(await comparePassword(payload.password, existEmail.password))) {
+      throw new BadRequestException('Login or password wrong')
+    }
+    const accessToken = await this.generateToken({
+      id: existEmail.id,
+      email: existEmail.email,
+      role: existEmail.role
+    })
+    return {
+      success: true,
+      accessToken
+    }
+  }
 
-        if(!existEmail){
-            throw new BadRequestException("Login or password wrong")
-        }
+  async loginTeacher(payload: LoginDto) {
+    const existEmail = await this.prisma.teacher.findFirst({
+      where: {
+        email: payload.email
+      }
+    })
 
-        if(!await bcrypt.compare(payload.password,existEmail.password)){
-            throw new BadRequestException("Login or password wrong")
-        }
-
-        const accessToken = await this.generateToken({id:existEmail.id,email:existEmail.email, role:existEmail.role})
-
-        return {
-            success : true,
-            accessToken
-        }
+    if (!existEmail) {
+      throw new BadRequestException('Login or password wrong')
     }
 
-    async loginTeacher(payload : LoginDto){
-        const existEmail = await this.prisma.teacher.findFirst({
-            where:{
-                email:payload.login
-            }
-        })
-
-        if(!existEmail){
-            throw new BadRequestException("Login or password wrong")
-        }
-
-        if(!await bcrypt.compare(payload.password,existEmail.password)){
-            throw new BadRequestException("Login or password wrong")
-        }
-
-        const accessToken = await this.generateToken({id:existEmail.id,email:existEmail.email, role:Role.TEACHER})
-
-        return {
-            success : true,
-            accessToken
-        }
+    if (!(await comparePassword(payload.password, existEmail.password))) {
+      throw new BadRequestException('Login or password wrong')
     }
 
-     async loginStudent(payload : LoginDto){
-        const existEmail = await this.prisma.teacher.findFirst({
-            where:{
-                email:payload.login
-            }
-        })
+    const accessToken = await this.generateToken({
+      id: existEmail.id,
+      email: existEmail.email,
+      role: Role.TEACHER
+    })
 
-        if(!existEmail){
-            throw new BadRequestException("Login or password wrong")
-        }
-
-        if(!await bcrypt.compare(payload.password,existEmail.password)){
-            throw new BadRequestException("Login or password wrong")
-        }
-
-        const accessToken = await this.generateToken({id:existEmail.id,email:existEmail.email, role:Role.STUDENT})
-
-        return {
-            success : true,
-            accessToken
-        }
+    return {
+      success: true,
+      accessToken
     }
+  }
+  async loginStudent(payload: LoginDto) {
+    const existEmail = await this.prisma.student.findFirst({
+      where: {
+        email: payload.email
+      }
+    })
+
+    if (!existEmail) {
+      throw new BadRequestException('Login or password wrong')
+    }
+    if (!(await comparePassword(payload.password, existEmail.password))) {
+      throw new BadRequestException('Login or password wrong')
+    }
+    const accessToken = await this.generateToken({
+      id: existEmail.id,
+      email: existEmail.email,
+      role: Role.STUDENT
+    })
+
+    return {
+      success: true,
+      accessToken
+    }
+  }
 }

@@ -1,35 +1,24 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Role, UserStatus } from '@prisma/client';
-import {IsDateString,IsEnum,IsOptional,IsString,} from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsEmail, IsOptional, IsString } from "class-validator";
 
-export class UpdateUserDto{
-  @ApiProperty({ example: 'aziz estet', required: false })
-  @IsString()
+export class UpdateUserDto {
+  @ApiProperty({ required: false })
   @IsOptional()
+  @IsString()
   fullName?: string;
 
-  @ApiProperty({ example: 'Senior Manager', required: false })
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
+  position?: string
+  
+  @ApiProperty({ required: false })
   @IsOptional()
-  position?: string;
-
-  @ApiProperty({ example: '2024-01-15', required: false })
-  @IsDateString()
-  @IsOptional()
-  hire_date?: string;
-
-  @ApiProperty({ enum: Role, required: false })
-  @IsEnum(Role)
-  @IsOptional()
-  role?:Role;
-
-  @ApiProperty({ example: 'Toshkent, Chilonzor', required: false })
   @IsString()
-  @IsOptional()
-  address?: string;
-
-  @ApiProperty({ enum: UserStatus, required: false })
-  @IsEnum(UserStatus)
-  @IsOptional()
-  status?: UserStatus;
+  address?: string
 }
